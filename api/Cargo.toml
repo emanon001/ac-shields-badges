@@ -7,7 +7,14 @@ edition = "2018"
 [dependencies]
 http = "0.1"
 vercel_lambda = "*"
+reqwest = { version = "0.11", features = ["blocking", "json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 [lib]
 name = "util"
 path = "_util.rs"
+
+[[bin]]
+name = "ac-rate"
+path = "ac-rate.rs"
