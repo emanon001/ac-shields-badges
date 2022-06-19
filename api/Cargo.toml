@@ -1,0 +1,13 @@
+[package]
+name = "index"
+version = "1.0.0"
+authors = ["emanon001 <emanon001@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+http = "0.1"
+vercel_lambda = "*"
+
+[lib]
+name = "util"
+path = "_util.rs"
