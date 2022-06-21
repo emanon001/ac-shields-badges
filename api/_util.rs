@@ -34,7 +34,7 @@ pub fn get_ac_rate(
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ShileldsResponseBody {
-    scheme_version: u32,
+    schema_version: u32,
     label: String,
     message: String,
     color: String,
@@ -64,7 +64,7 @@ impl ShileldsResponseBody {
         .to_string();
 
         Self {
-            scheme_version: 1,
+            schema_version: 1,
             label,
             message,
             color,
