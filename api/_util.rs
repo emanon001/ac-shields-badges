@@ -13,6 +13,7 @@ pub enum ContestType {
 #[derive(Deserialize)]
 #[serde(rename_all = "PascalCase")]
 struct ContestHistoryResponse {
+    is_rated: bool,
     new_rating: u32,
 }
 
@@ -20,13 +21,14 @@ pub fn get_ac_rate(
     user_id: &str,
     contest_type: ContestType,
 ) -> Result<Rate, Box<dyn std::error::Error>> {
-    let resp = reqwest::blocking::get(contest_history_url(user_id, contest_type))?
+    let history_list = reqwest::blocking::get(contest_history_url(user_id, contest_type))?
         .json::<Vec<ContestHistoryResponse>>()?;
-    if let Some(latest) = resp.last() {
-        Ok(latest.new_rating)
-    } else {
-        Ok(0)
+    for h in history_list.into_iter().rev() {
+        if h.is_rated {
+            return Ok(h.new_rating);
+        }
     }
+    Ok(0)
 }
 
 #[derive(Serialize)]
