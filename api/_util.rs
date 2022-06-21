@@ -21,8 +21,7 @@ pub fn get_ac_rate(
     contest_type: ContestType,
 ) -> Result<Rate, Box<dyn std::error::Error>> {
     let resp = reqwest::blocking::get(contest_history_url(user_id, contest_type))?
-        .json::<Vec<ContestHistoryResponse>>()
-        .unwrap();
+        .json::<Vec<ContestHistoryResponse>>()?;
     if let Some(latest) = resp.last() {
         Ok(latest.new_rating)
     } else {
