@@ -35,6 +35,7 @@ fn handler(request: Request) -> Result<impl IntoResponse, VercelError> {
     let response = Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", "application/json; charset=utf-8")
+        .header("Cache-Control", "max-age=0, s-maxage=86400")
         .body(serde_json::to_string(&body).unwrap())
         .expect("Internal Server Error");
     Ok(response)
