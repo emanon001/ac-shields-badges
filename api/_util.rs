@@ -1,5 +1,6 @@
 use reqwest;
 use serde::Deserialize;
+use url::Url;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Rate(u32);
@@ -30,13 +31,17 @@ pub fn get_ac_rate(
     }
 }
 
-fn contest_history_url(user_id: &str, contest_type: ContestType) -> String {
-    let contest_type_param = match contest_type {
-        ContestType::Algorithm => "",
-        ContestType::Heuristic => "?contestType=heuristic",
+fn contest_history_url(user_id: &str, contest_type: ContestType) -> Url {
+    let mut params = Vec::new();
+    match contest_type {
+        ContestType::Heuristic => {
+            params.push(("contestType", "heuristic"));
+        }
+        _ => {}
     };
-    format!(
-        "https://atcoder.jp/users/{}/history/json{}",
-        user_id, contest_type_param
+    Url::parse_with_params(
+        &format!("https://atcoder.jp/users/{}/history/json", user_id),
+        &params,
     )
+    .unwrap()
 }
