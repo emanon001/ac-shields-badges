@@ -9,18 +9,18 @@ use vercel_lambda::{error::VercelError, lambda, IntoResponse, Request, Response}
 fn handler(request: Request) -> Result<impl IntoResponse, VercelError> {
     let url = match Url::parse(&request.uri().to_string()) {
         Ok(url) => url,
-        Err(_) => return Ok(not_found_response()),
+        Err(_) => return Err(VercelError::new("failed parse uri")),
     };
     let query_map = url.query_pairs().into_owned().collect::<HashMap<_, _>>();
     let user_id = match query_map.get("user_id") {
         Some(user_id) => user_id,
-        None => return Ok(not_found_response()),
+        None => return Ok(not_found_response("'user_id' param not found".into())),
     };
     let contest_type = match query_map.get("contest_type") {
         Some(contest_type) => match contest_type.to_ascii_lowercase().as_ref() {
             "algorighm" => ContestType::Algorithm,
             "heuristic" => ContestType::Heuristic,
-            _ => return Ok(not_found_response()),
+            _ => return Ok(not_found_response("'contest_type' param is invalid".into())),
         },
         None => ContestType::Algorithm,
     };
@@ -35,11 +35,11 @@ fn handler(request: Request) -> Result<impl IntoResponse, VercelError> {
     Ok(response)
 }
 
-fn not_found_response() -> Response<String> {
+fn not_found_response(mes: String) -> Response<String> {
     Response::builder()
         .status(StatusCode::NOT_FOUND)
         .header("Content-Type", "text/plain")
-        .body("Not Found".to_string())
+        .body(mes)
         .unwrap()
 }
 
