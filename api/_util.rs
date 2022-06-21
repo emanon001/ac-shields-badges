@@ -1,9 +1,8 @@
 use reqwest;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
-#[derive(Clone, Copy, Debug)]
-pub struct Rate(u32);
+type Rate = u32;
 
 #[derive(Copy, Clone, Debug)]
 pub enum ContestType {
@@ -20,14 +19,55 @@ struct ContestHistoryResponse {
 pub fn get_ac_rate(
     user_id: &str,
     contest_type: ContestType,
-) -> Result<Option<Rate>, Box<dyn std::error::Error>> {
+) -> Result<Rate, Box<dyn std::error::Error>> {
     let resp = reqwest::blocking::get(contest_history_url(user_id, contest_type))?
         .json::<Vec<ContestHistoryResponse>>()
         .unwrap();
     if let Some(latest) = resp.last() {
-        Ok(Some(Rate(latest.new_rating)))
+        Ok(latest.new_rating)
     } else {
-        Ok(None)
+        Ok(0)
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShileldsResponseBody {
+    scheme_version: u32,
+    label: String,
+    message: String,
+    color: String,
+}
+
+impl ShileldsResponseBody {
+    pub fn new_ac_rate_response(contest_type: ContestType, rate: Rate) -> Self {
+        let label = format!(
+            "AtCoder{}",
+            match contest_type {
+                ContestType::Algorithm => "Ⓐ",
+                ContestType::Heuristic => "Ⓗ",
+            }
+        );
+        let message = rate.to_string();
+        let color = match rate {
+            0 => "000000",
+            1..=399 => "808080",
+            400..=799 => "804000",
+            800..=1199 => "008000",
+            1200..=1599 => "00C0C0",
+            1600..=1999 => "0000FF",
+            2000..=2399 => "C0C000",
+            2400..=2799 => "FF8000",
+            _ => "FF0000",
+        }
+        .to_string();
+
+        Self {
+            scheme_version: 1,
+            label,
+            message,
+            color,
+        }
     }
 }
 
