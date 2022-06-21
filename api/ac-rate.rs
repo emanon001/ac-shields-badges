@@ -7,14 +7,15 @@ use util::{get_ac_rate, ContestType, ShileldsResponseBody};
 use vercel_lambda::{error::VercelError, lambda, IntoResponse, Request, Response};
 
 fn handler(request: Request) -> Result<impl IntoResponse, VercelError> {
+    // get user_id & contest_type from query-string
     let url = match Url::parse(&request.uri().to_string()) {
         Ok(url) => url,
         Err(_) => return Err(VercelError::new("failed parse uri")),
     };
     let query_map = url.query_pairs().into_owned().collect::<HashMap<_, _>>();
     let user_id = match query_map.get("user_id") {
-        Some(user_id) => user_id,
-        None => return Ok(not_found_response("'user_id' param not found".into())),
+        Some(user_id) if !user_id.trim().is_empty() => user_id.trim(),
+        _ => return Ok(not_found_response("'user_id' param not found".into())),
     };
     let contest_type = match query_map.get("contest_type") {
         Some(contest_type) => match contest_type.to_ascii_lowercase().as_ref() {
@@ -24,8 +25,12 @@ fn handler(request: Request) -> Result<impl IntoResponse, VercelError> {
         },
         None => ContestType::Algorithm,
     };
-    // TODO: check error
-    let rate = get_ac_rate(user_id, contest_type).unwrap();
+
+    let rate = match get_ac_rate(user_id, contest_type) {
+        Ok(rate) => rate,
+        Err(_) => return Err(VercelError::new("failed get atcoder rate".into())),
+    };
+
     let body = ShileldsResponseBody::new_ac_rate_response(contest_type, rate);
     let response = Response::builder()
         .status(StatusCode::OK)
