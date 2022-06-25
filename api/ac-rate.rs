@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::error::Error;
 use url::Url;
-use util::{get_ac_rate, ContestType, ShileldsResponseBody};
+use util::{get_ac_rate, ContestType, ShileldsResponseBody, UserId};
 use vercel_lambda::{error::VercelError, lambda, IntoResponse, Request, Response};
 
 fn handler(request: Request) -> Result<impl IntoResponse, VercelError> {
@@ -14,9 +14,16 @@ fn handler(request: Request) -> Result<impl IntoResponse, VercelError> {
         Err(_) => return Err(VercelError::new("failed parse uri")),
     };
     let query_map = url.query_pairs().into_owned().collect::<HashMap<_, _>>();
-    let user_id = match query_map.get("user_id") {
-        Some(user_id) if !user_id.trim().is_empty() => user_id.trim(),
-        _ => return Ok(not_found_response("'user_id' param not found".into())),
+    let user_id = match query_map
+        .get("user_id")
+        .and_then(|u| UserId::try_from(u.as_ref()).ok())
+    {
+        Some(user_id) => user_id,
+        _ => {
+            return Ok(not_found_response(
+                "'user_id' param not found or invalid value".into(),
+            ))
+        }
     };
     let contest_type = match query_map.get("contest_type") {
         Some(contest_type) => match ContestType::try_from(contest_type.as_ref()) {
@@ -26,7 +33,7 @@ fn handler(request: Request) -> Result<impl IntoResponse, VercelError> {
         None => ContestType::Algorithm,
     };
 
-    let rate = match get_ac_rate(user_id, contest_type) {
+    let rate = match get_ac_rate(&user_id, contest_type) {
         Ok(rate) => rate,
         Err(_) => return Err(VercelError::new("failed get atcoder rate".into())),
     };

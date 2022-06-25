@@ -1,3 +1,4 @@
+use regex::Regex;
 use reqwest;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -23,6 +24,23 @@ impl TryFrom<&str> for ContestType {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct UserId(String);
+
+impl TryFrom<&str> for UserId {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let value = value.trim();
+        let re = Regex::new(r"\A[_a-zA-Z0-9]{3,16}\z").unwrap();
+        if re.is_match(value) {
+            Ok(UserId(value.into()))
+        } else {
+            Err(())
+        }
+    }
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "PascalCase")]
 struct ContestHistoryResponse {
@@ -31,7 +49,7 @@ struct ContestHistoryResponse {
 }
 
 pub fn get_ac_rate(
-    user_id: &str,
+    user_id: &UserId,
     contest_type: ContestType,
 ) -> Result<Rate, Box<dyn std::error::Error>> {
     let history_list = reqwest::blocking::get(contest_history_url(user_id, contest_type))?
@@ -85,7 +103,7 @@ impl ShileldsResponseBody {
     }
 }
 
-fn contest_history_url(user_id: &str, contest_type: ContestType) -> Url {
+fn contest_history_url(user_id: &UserId, contest_type: ContestType) -> Url {
     let mut params = Vec::new();
     match contest_type {
         ContestType::Heuristic => {
@@ -94,7 +112,7 @@ fn contest_history_url(user_id: &str, contest_type: ContestType) -> Url {
         _ => {}
     };
     Url::parse_with_params(
-        &format!("https://atcoder.jp/users/{}/history/json", user_id),
+        &format!("https://atcoder.jp/users/{}/history/json", user_id.0),
         &params,
     )
     .unwrap()
