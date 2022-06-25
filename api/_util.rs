@@ -1,5 +1,6 @@
 use reqwest;
 use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use url::Url;
 
 type Rate = u32;
@@ -8,6 +9,18 @@ type Rate = u32;
 pub enum ContestType {
     Algorithm,
     Heuristic,
+}
+
+impl TryFrom<&str> for ContestType {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value.to_ascii_lowercase().as_ref() {
+            "algorithm" => Ok(Self::Algorithm),
+            "heuristic" => Ok(Self::Heuristic),
+            _ => Err(()),
+        }
+    }
 }
 
 #[derive(Deserialize)]

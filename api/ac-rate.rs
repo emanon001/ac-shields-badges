@@ -1,6 +1,7 @@
 use http::StatusCode;
 use serde_json;
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::error::Error;
 use url::Url;
 use util::{get_ac_rate, ContestType, ShileldsResponseBody};
@@ -18,10 +19,9 @@ fn handler(request: Request) -> Result<impl IntoResponse, VercelError> {
         _ => return Ok(not_found_response("'user_id' param not found".into())),
     };
     let contest_type = match query_map.get("contest_type") {
-        Some(contest_type) => match contest_type.to_ascii_lowercase().as_ref() {
-            "algorithm" => ContestType::Algorithm,
-            "heuristic" => ContestType::Heuristic,
-            _ => return Ok(not_found_response("'contest_type' param is invalid".into())),
+        Some(contest_type) => match ContestType::try_from(contest_type.as_ref()) {
+            Ok(contest_type) => contest_type,
+            Err(_) => return Ok(not_found_response("'contest_type' param is invalid".into())),
         },
         None => ContestType::Algorithm,
     };
