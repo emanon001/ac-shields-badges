@@ -19,7 +19,7 @@ fn handler(request: Request) -> Result<impl IntoResponse, VercelError> {
     };
     let contest_type = match query_map.get("contest_type") {
         Some(contest_type) => match contest_type.to_ascii_lowercase().as_ref() {
-            "algorighm" => ContestType::Algorithm,
+            "algorithm" => ContestType::Algorithm,
             "heuristic" => ContestType::Heuristic,
             _ => return Ok(not_found_response("'contest_type' param is invalid".into())),
         },
