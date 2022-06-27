@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::error::Error;
 use url::Url;
-use util::{get_ac_rate, ContestType, ShileldsResponseBody, UserId};
+use util::{get_ac_rate, ContestType, ShieldsResponseBody, UserId};
 use vercel_lambda::{error::VercelError, lambda, IntoResponse, Request, Response};
 
 fn handler(request: Request) -> Result<impl IntoResponse, VercelError> {
@@ -38,7 +38,7 @@ fn handler(request: Request) -> Result<impl IntoResponse, VercelError> {
         Err(_) => return Err(VercelError::new("failed get atcoder rate".into())),
     };
 
-    let body = ShileldsResponseBody::new_ac_rate_response(contest_type, rate);
+    let body = ShieldsResponseBody::new_ac_rate_response(contest_type, rate);
     let response = Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", "application/json; charset=utf-8")

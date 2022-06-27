@@ -64,14 +64,14 @@ pub fn get_ac_rate(
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ShileldsResponseBody {
+pub struct ShieldsResponseBody {
     schema_version: u32,
     label: String,
     message: String,
     color: String,
 }
 
-impl ShileldsResponseBody {
+impl ShieldsResponseBody {
     pub fn new_ac_rate_response(contest_type: ContestType, rate: Rate) -> Self {
         let label = format!(
             "AtCoder{}",
