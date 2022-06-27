@@ -6,7 +6,7 @@ use url::Url;
 
 type Rate = u32;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ContestType {
     Algorithm,
     Heuristic,
@@ -24,7 +24,7 @@ impl TryFrom<&str> for ContestType {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct UserId(String);
 
 impl TryFrom<&str> for UserId {
@@ -62,16 +62,16 @@ pub fn get_ac_rate(
     Ok(0)
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct ShileldsResponseBody {
+pub struct ShieldsResponseBody {
     schema_version: u32,
     label: String,
     message: String,
     color: String,
 }
 
-impl ShileldsResponseBody {
+impl ShieldsResponseBody {
     pub fn new_ac_rate_response(contest_type: ContestType, rate: Rate) -> Self {
         let label = format!(
             "AtCoder{}",
@@ -116,4 +116,117 @@ fn contest_history_url(user_id: &UserId, contest_type: ContestType) -> Url {
         &params,
     )
     .unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::*;
+
+    mod contest_type {
+        use super::*;
+
+        #[test]
+        fn try_from_string() {
+            assert_eq!(
+                ContestType::try_from("algorithm"),
+                Ok(ContestType::Algorithm)
+            );
+            assert_eq!(
+                ContestType::try_from("Algorithm"),
+                Ok(ContestType::Algorithm)
+            );
+            assert_eq!(
+                ContestType::try_from("heuristic"),
+                Ok(ContestType::Heuristic)
+            );
+            assert_eq!(
+                ContestType::try_from("Heuristic"),
+                Ok(ContestType::Heuristic)
+            );
+            assert_eq!(ContestType::try_from("invalid_type"), Err(()));
+        }
+    }
+
+    mod user_id {
+        use super::*;
+
+        #[test]
+        fn try_from_string() {
+            assert_eq!(UserId::try_from("abc"), Ok(UserId("abc".into())));
+            assert_eq!(UserId::try_from("Abc"), Ok(UserId("Abc".into())));
+            assert_eq!(UserId::try_from("123"), Ok(UserId("123".into())));
+            assert_eq!(UserId::try_from("abc123"), Ok(UserId("abc123".into())));
+            assert_eq!(
+                UserId::try_from("0123456789123456"),
+                Ok(UserId("0123456789123456".into()))
+            );
+            assert_eq!(UserId::try_from("ab"), Err(()));
+            assert_eq!(UserId::try_from("01234567891234567"), Err(()));
+        }
+    }
+
+    mod shields_response_body {
+        use super::*;
+
+        #[rstest]
+        #[case(0, "000000")]
+        #[case(1, "808080")]
+        #[case(399, "808080")]
+        #[case(400, "804000")]
+        #[case(799, "804000")]
+        #[case(800, "008000")]
+        #[case(1199, "008000")]
+        #[case(1200, "00C0C0")]
+        #[case(1599, "00C0C0")]
+        #[case(1600, "0000FF")]
+        #[case(1999, "0000FF")]
+        #[case(2000, "C0C000")]
+        #[case(2399, "C0C000")]
+        #[case(2400, "FF8000")]
+        #[case(2799, "FF8000")]
+        #[case(2800, "FF0000")]
+        #[case(4200, "FF0000")]
+        fn new_ac_rate_response_algorithm(#[case] rate: u32, #[case] color: &str) {
+            assert_eq!(
+                ShieldsResponseBody::new_ac_rate_response(ContestType::Algorithm, rate),
+                ShieldsResponseBody {
+                    schema_version: 1,
+                    label: "AtCoderⒶ".to_string(),
+                    message: rate.to_string(),
+                    color: color.to_string(),
+                }
+            );
+        }
+
+        #[rstest]
+        #[case(0, "000000")]
+        #[case(1, "808080")]
+        #[case(399, "808080")]
+        #[case(400, "804000")]
+        #[case(799, "804000")]
+        #[case(800, "008000")]
+        #[case(1199, "008000")]
+        #[case(1200, "00C0C0")]
+        #[case(1599, "00C0C0")]
+        #[case(1600, "0000FF")]
+        #[case(1999, "0000FF")]
+        #[case(2000, "C0C000")]
+        #[case(2399, "C0C000")]
+        #[case(2400, "FF8000")]
+        #[case(2799, "FF8000")]
+        #[case(2800, "FF0000")]
+        #[case(4200, "FF0000")]
+        fn new_ac_rate_response_heuristic(#[case] rate: u32, #[case] color: &str) {
+            assert_eq!(
+                ShieldsResponseBody::new_ac_rate_response(ContestType::Heuristic, rate),
+                ShieldsResponseBody {
+                    schema_version: 1,
+                    label: "AtCoderⒽ".to_string(),
+                    message: rate.to_string(),
+                    color: color.to_string(),
+                }
+            );
+        }
+    }
 }
