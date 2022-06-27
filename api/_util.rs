@@ -6,7 +6,7 @@ use url::Url;
 
 type Rate = u32;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ContestType {
     Algorithm,
     Heuristic,
@@ -116,4 +116,30 @@ fn contest_history_url(user_id: &UserId, contest_type: ContestType) -> Url {
         &params,
     )
     .unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn contest_type_try_from_string() {
+        assert_eq!(
+            ContestType::try_from("algorithm"),
+            Ok(ContestType::Algorithm)
+        );
+        assert_eq!(
+            ContestType::try_from("Algorithm"),
+            Ok(ContestType::Algorithm)
+        );
+        assert_eq!(
+            ContestType::try_from("heuristic"),
+            Ok(ContestType::Heuristic)
+        );
+        assert_eq!(
+            ContestType::try_from("Heuristic"),
+            Ok(ContestType::Heuristic)
+        );
+        assert_eq!(ContestType::try_from("invalid_type"), Err(()));
+    }
 }
