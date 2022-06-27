@@ -24,7 +24,7 @@ impl TryFrom<&str> for ContestType {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct UserId(String);
 
 impl TryFrom<&str> for UserId {
@@ -122,24 +122,46 @@ fn contest_history_url(user_id: &UserId, contest_type: ContestType) -> Url {
 mod tests {
     use super::*;
 
-    #[test]
-    fn contest_type_try_from_string() {
-        assert_eq!(
-            ContestType::try_from("algorithm"),
-            Ok(ContestType::Algorithm)
-        );
-        assert_eq!(
-            ContestType::try_from("Algorithm"),
-            Ok(ContestType::Algorithm)
-        );
-        assert_eq!(
-            ContestType::try_from("heuristic"),
-            Ok(ContestType::Heuristic)
-        );
-        assert_eq!(
-            ContestType::try_from("Heuristic"),
-            Ok(ContestType::Heuristic)
-        );
-        assert_eq!(ContestType::try_from("invalid_type"), Err(()));
+    mod contest_type {
+        use super::*;
+
+        #[test]
+        fn try_from_string() {
+            assert_eq!(
+                ContestType::try_from("algorithm"),
+                Ok(ContestType::Algorithm)
+            );
+            assert_eq!(
+                ContestType::try_from("Algorithm"),
+                Ok(ContestType::Algorithm)
+            );
+            assert_eq!(
+                ContestType::try_from("heuristic"),
+                Ok(ContestType::Heuristic)
+            );
+            assert_eq!(
+                ContestType::try_from("Heuristic"),
+                Ok(ContestType::Heuristic)
+            );
+            assert_eq!(ContestType::try_from("invalid_type"), Err(()));
+        }
+    }
+
+    mod user_id {
+        use super::*;
+
+        #[test]
+        fn try_from_string() {
+            assert_eq!(UserId::try_from("abc"), Ok(UserId("abc".into())));
+            assert_eq!(UserId::try_from("Abc"), Ok(UserId("Abc".into())));
+            assert_eq!(UserId::try_from("123"), Ok(UserId("123".into())));
+            assert_eq!(UserId::try_from("abc123"), Ok(UserId("abc123".into())));
+            assert_eq!(
+                UserId::try_from("0123456789123456"),
+                Ok(UserId("0123456789123456".into()))
+            );
+            assert_eq!(UserId::try_from("ab"), Err(()));
+            assert_eq!(UserId::try_from("01234567891234567"), Err(()));
+        }
     }
 }
