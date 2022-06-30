@@ -1,11 +1,19 @@
 use http::StatusCode;
+use once_cell::sync::Lazy;
 use serde_json;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::convert::TryFrom;
 use std::error::Error;
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
 use url::Url;
 use util::{get_ac_rate, ContestType, ShieldsResponseBody, UserId};
 use vercel_lambda::{error::VercelError, lambda, IntoResponse, Request, Response};
+
+static ATCODER_REQUEST_TIME_HISTORY: Lazy<Mutex<VecDeque<Instant>>> = Lazy::new(|| {
+    let m = VecDeque::new();
+    Mutex::new(m)
+});
 
 fn handler(request: Request) -> Result<impl IntoResponse, VercelError> {
     // get user_id & contest_type from query-string
@@ -33,6 +41,13 @@ fn handler(request: Request) -> Result<impl IntoResponse, VercelError> {
         None => ContestType::Algorithm,
     };
 
+    // check rate-limit
+    if !check_atcoder_rate_limit() {
+        return Ok(too_many_requests_response(
+            "rate limit has been reached".into(),
+        ));
+    }
+
     let rate = match get_ac_rate(&user_id, contest_type) {
         Ok(rate) => rate,
         Err(_) => return Err(VercelError::new("failed get atcoder rate".into())),
@@ -48,9 +63,42 @@ fn handler(request: Request) -> Result<impl IntoResponse, VercelError> {
     Ok(response)
 }
 
+fn check_atcoder_rate_limit() -> bool {
+    let now = Instant::now();
+    let duration = Duration::from_secs(60);
+    // 1分以内の履歴のみ残す
+    let mut history = ATCODER_REQUEST_TIME_HISTORY.lock().unwrap();
+    loop {
+        match history.pop_front() {
+            Some(t) => {
+                if t >= now - duration {
+                    // restore
+                    history.push_front(t);
+                    break;
+                }
+            }
+            _ => break,
+        }
+    }
+    // 1分間に10回までのリクエストを許可する
+    let ok = history.len() < 10;
+    if ok {
+        history.push_back(now);
+    }
+    ok
+}
+
 fn not_found_response(mes: String) -> Response<String> {
     Response::builder()
         .status(StatusCode::NOT_FOUND)
+        .header("Content-Type", "text/plain")
+        .body(mes)
+        .unwrap()
+}
+
+fn too_many_requests_response(mes: String) -> Response<String> {
+    Response::builder()
+        .status(StatusCode::TOO_MANY_REQUESTS)
         .header("Content-Type", "text/plain")
         .body(mes)
         .unwrap()
