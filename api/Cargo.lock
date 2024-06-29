@@ -600,7 +600,7 @@ dependencies = [
 name = "index"
 version = "1.0.0"
 dependencies = [
- "http 0.1.21",
+ "http 0.2.8",
  "once_cell",
  "regex",
  "reqwest",
