@@ -4,9 +4,16 @@ use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use url::Url;
 
-type Rate = u32;
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct Rate(u32);
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+impl std::fmt::Display for Rate {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ContestType {
     Algorithm,
     Heuristic,
@@ -56,10 +63,10 @@ pub fn get_ac_rate(
         .json::<Vec<ContestHistoryResponse>>()?;
     for h in history_list.into_iter().rev() {
         if h.is_rated {
-            return Ok(h.new_rating);
+            return Ok(Rate(h.new_rating));
         }
     }
-    Ok(0)
+    Ok(Rate(0))
 }
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -81,7 +88,7 @@ impl ShieldsResponseBody {
             }
         );
         let message = rate.to_string();
-        let color = match rate {
+        let color = match rate.0 {
             0 => "000000",
             1..=399 => "808080",
             400..=799 => "804000",
@@ -189,7 +196,7 @@ mod tests {
         #[case(4200, "FF0000")]
         fn new_ac_rate_response_algorithm(#[case] rate: u32, #[case] color: &str) {
             assert_eq!(
-                ShieldsResponseBody::new_ac_rate_response(ContestType::Algorithm, rate),
+                ShieldsResponseBody::new_ac_rate_response(ContestType::Algorithm, Rate(rate)),
                 ShieldsResponseBody {
                     schema_version: 1,
                     label: "AtCoderⒶ".to_string(),
@@ -219,7 +226,7 @@ mod tests {
         #[case(4200, "FF0000")]
         fn new_ac_rate_response_heuristic(#[case] rate: u32, #[case] color: &str) {
             assert_eq!(
-                ShieldsResponseBody::new_ac_rate_response(ContestType::Heuristic, rate),
+                ShieldsResponseBody::new_ac_rate_response(ContestType::Heuristic, Rate(rate)),
                 ShieldsResponseBody {
                     schema_version: 1,
                     label: "AtCoderⒽ".to_string(),
