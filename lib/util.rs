@@ -1,6 +1,7 @@
+use easy_scraper::Pattern;
 use regex::Regex;
 use reqwest;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::convert::TryFrom;
 use url::Url;
 
@@ -48,25 +49,33 @@ impl TryFrom<&str> for UserId {
     }
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct ContestHistoryResponse {
-    is_rated: bool,
-    new_rating: u32,
-}
-
 pub fn get_ac_rate(
     user_id: &UserId,
     contest_type: ContestType,
 ) -> Result<Rate, Box<dyn std::error::Error>> {
-    let history_list = reqwest::blocking::get(contest_history_url(user_id, contest_type))?
-        .json::<Vec<ContestHistoryResponse>>()?;
-    for h in history_list.into_iter().rev() {
-        if h.is_rated {
-            return Ok(Rate(h.new_rating));
+    let doc = reqwest::blocking::get(user_profile_url(user_id, contest_type))?.text()?;
+    let pat = Pattern::new(
+        r#"
+        <table>
+            <tbody>
+                <tr>
+                    <th>Rating</th>
+                    <td>
+                        <img>
+                        <span>{{rate}}</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>"#,
+    )?;
+    let ms = pat.matches(&doc);
+    match ms.first() {
+        Some(m) => {
+            let rate: u32 = m["rate"].parse()?;
+            Ok(Rate(rate))
         }
+        None => Ok(Rate(0)),
     }
-    Ok(Rate(0))
 }
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -110,19 +119,16 @@ impl ShieldsResponseBody {
     }
 }
 
-fn contest_history_url(user_id: &UserId, contest_type: ContestType) -> Url {
-    let mut params = Vec::new();
+fn user_profile_url(user_id: &UserId, contest_type: ContestType) -> Url {
+    let mut params: Vec<(&str, &str)> = Vec::new();
+    params.push(("lang", "en"));
     match contest_type {
         ContestType::Heuristic => {
             params.push(("contestType", "heuristic"));
         }
         _ => {}
     };
-    Url::parse_with_params(
-        &format!("https://atcoder.jp/users/{}/history/json", user_id.0),
-        &params,
-    )
-    .unwrap()
+    Url::parse_with_params(&format!("https://atcoder.jp/users/{}", user_id.0), &params).unwrap()
 }
 
 #[cfg(test)]
