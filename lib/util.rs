@@ -52,8 +52,12 @@ impl TryFrom<&str> for UserId {
 pub fn get_ac_rate(
     user_id: &UserId,
     contest_type: ContestType,
-) -> Result<Rate, Box<dyn std::error::Error>> {
+) -> Result<Option<Rate>, Box<dyn std::error::Error>> {
     let doc = reqwest::blocking::get(user_profile_url(user_id, contest_type))?.text()?;
+    if doc.contains("This user has not competed in a rated contest yet.") {
+        return Ok(None);
+    }
+
     let pat = Pattern::new(
         r#"
         <table>
@@ -72,9 +76,9 @@ pub fn get_ac_rate(
     match ms.first() {
         Some(m) => {
             let rate: u32 = m["rate"].parse()?;
-            Ok(Rate(rate))
+            Ok(Some(Rate(rate)))
         }
-        None => Ok(Rate(0)),
+        None => Err("rate not found".into()),
     }
 }
 
@@ -88,7 +92,7 @@ pub struct ShieldsResponseBody {
 }
 
 impl ShieldsResponseBody {
-    pub fn new_ac_rate_response(contest_type: ContestType, rate: Rate) -> Self {
+    pub fn new_ac_rate_response(contest_type: ContestType, rate: Option<Rate>) -> Self {
         let label = format!(
             "AtCoder{}",
             match contest_type {
@@ -96,19 +100,24 @@ impl ShieldsResponseBody {
                 ContestType::Heuristic => "Ⓗ",
             }
         );
-        let message = rate.to_string();
-        let color = match rate.0 {
-            0 => "000000",
-            1..=399 => "808080",
-            400..=799 => "804000",
-            800..=1199 => "008000",
-            1200..=1599 => "00C0C0",
-            1600..=1999 => "0000FF",
-            2000..=2399 => "C0C000",
-            2400..=2799 => "FF8000",
-            _ => "FF0000",
-        }
-        .to_string();
+        let (message, color) = match rate {
+            Some(rate) => {
+                let message = rate.to_string();
+                let color = match rate.0 {
+                    ..=399 => "808080",
+                    400..=799 => "804000",
+                    800..=1199 => "008000",
+                    1200..=1599 => "00C0C0",
+                    1600..=1999 => "0000FF",
+                    2000..=2399 => "C0C000",
+                    2400..=2799 => "FF8000",
+                    _ => "FF0000",
+                }
+                .to_string();
+                (message, color)
+            }
+            None => ("-".to_owned(), "000000".to_owned()),
+        };
 
         Self {
             schema_version: 1,
@@ -140,7 +149,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn try_from_string() {
+        fn test_try_from_string() {
             assert_eq!(
                 ContestType::try_from("algorithm"),
                 Ok(ContestType::Algorithm)
@@ -165,7 +174,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn try_from_string() {
+        fn test_try_from_string() {
             assert_eq!(UserId::try_from("abc"), Ok(UserId("abc".into())));
             assert_eq!(UserId::try_from("Abc"), Ok(UserId("Abc".into())));
             assert_eq!(UserId::try_from("123"), Ok(UserId("123".into())));
@@ -183,8 +192,7 @@ mod tests {
         use super::*;
 
         #[rstest]
-        #[case(0, "000000")]
-        #[case(1, "808080")]
+        #[case(0, "808080")]
         #[case(399, "808080")]
         #[case(400, "804000")]
         #[case(799, "804000")]
@@ -200,9 +208,9 @@ mod tests {
         #[case(2799, "FF8000")]
         #[case(2800, "FF0000")]
         #[case(4200, "FF0000")]
-        fn new_ac_rate_response_algorithm(#[case] rate: u32, #[case] color: &str) {
+        fn test_new_ac_rate_response_algorithm(#[case] rate: u32, #[case] color: &str) {
             assert_eq!(
-                ShieldsResponseBody::new_ac_rate_response(ContestType::Algorithm, Rate(rate)),
+                ShieldsResponseBody::new_ac_rate_response(ContestType::Algorithm, Some(Rate(rate))),
                 ShieldsResponseBody {
                     schema_version: 1,
                     label: "AtCoderⒶ".to_string(),
@@ -212,9 +220,21 @@ mod tests {
             );
         }
 
+        #[test]
+        fn test_new_ac_rate_response_algorithm_user_has_not_competed_in_a_rated_yet() {
+            assert_eq!(
+                ShieldsResponseBody::new_ac_rate_response(ContestType::Algorithm, None),
+                ShieldsResponseBody {
+                    schema_version: 1,
+                    label: "AtCoderⒶ".to_string(),
+                    message: "-".to_owned(),
+                    color: "000000".to_owned(),
+                }
+            );
+        }
+
         #[rstest]
-        #[case(0, "000000")]
-        #[case(1, "808080")]
+        #[case(0, "808080")]
         #[case(399, "808080")]
         #[case(400, "804000")]
         #[case(799, "804000")]
@@ -230,9 +250,9 @@ mod tests {
         #[case(2799, "FF8000")]
         #[case(2800, "FF0000")]
         #[case(4200, "FF0000")]
-        fn new_ac_rate_response_heuristic(#[case] rate: u32, #[case] color: &str) {
+        fn test_new_ac_rate_response_heuristic(#[case] rate: u32, #[case] color: &str) {
             assert_eq!(
-                ShieldsResponseBody::new_ac_rate_response(ContestType::Heuristic, Rate(rate)),
+                ShieldsResponseBody::new_ac_rate_response(ContestType::Heuristic, Some(Rate(rate))),
                 ShieldsResponseBody {
                     schema_version: 1,
                     label: "AtCoderⒽ".to_string(),
@@ -241,5 +261,18 @@ mod tests {
                 }
             );
         }
+    }
+
+    #[test]
+    fn test_new_ac_rate_response_heuristic_user_has_not_competed_in_a_rated_yet() {
+        assert_eq!(
+            ShieldsResponseBody::new_ac_rate_response(ContestType::Heuristic, None),
+            ShieldsResponseBody {
+                schema_version: 1,
+                label: "AtCoderⒽ".to_string(),
+                message: "-".to_owned(),
+                color: "000000".to_owned(),
+            }
+        );
     }
 }
