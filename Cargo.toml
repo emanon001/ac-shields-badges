@@ -20,8 +20,8 @@ vercel_runtime = { version = "1" }
 rstest = "0.24.0"
 
 [lib]
-name = "util"
-path = "lib/util.rs"
+name = "lib"
+path = "lib/mod.rs"
 
 [[bin]]
 name = "ac-rate"
