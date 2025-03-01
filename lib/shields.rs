@@ -24,7 +24,7 @@ impl ShieldsResponseBody {
         let (message, color) = match rate {
             Some(rate) => {
                 let message = rate.to_string();
-                let color = match rate.0 {
+                let color = match rate.into_inner() {
                     ..=399 => "808080",
                     400..=799 => "804000",
                     800..=1199 => "008000",
@@ -73,7 +73,7 @@ mod tests {
     #[case(4200, "FF0000")]
     fn test_new_algorithm(#[case] rate: u32, #[case] color: &str) {
         assert_eq!(
-            ShieldsResponseBody::new(ContestType::Algorithm, Some(Rate(rate))),
+            ShieldsResponseBody::new(ContestType::Algorithm, Some(Rate::new(rate))),
             ShieldsResponseBody {
                 schema_version: 1,
                 label: "AtCoderⒶ".to_string(),
@@ -115,7 +115,7 @@ mod tests {
     #[case(4200, "FF0000")]
     fn test_new_heuristic(#[case] rate: u32, #[case] color: &str) {
         assert_eq!(
-            ShieldsResponseBody::new(ContestType::Heuristic, Some(Rate(rate))),
+            ShieldsResponseBody::new(ContestType::Heuristic, Some(Rate::new(rate))),
             ShieldsResponseBody {
                 schema_version: 1,
                 label: "AtCoderⒽ".to_string(),

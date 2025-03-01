@@ -33,7 +33,7 @@ pub fn get_ac_rate(
     match ms.first() {
         Some(m) => {
             let rate: u32 = m["rate"].parse()?;
-            Ok(Some(Rate(rate)))
+            Ok(Some(Rate::new(rate)))
         }
         None => Err("rate not found".into()),
     }
