@@ -48,5 +48,9 @@ fn user_profile_url(user_id: &UserId, contest_type: ContestType) -> Url {
         }
         _ => {}
     };
-    Url::parse_with_params(&format!("https://atcoder.jp/users/{}", user_id.0), &params).unwrap()
+    Url::parse_with_params(
+        &format!("https://atcoder.jp/users/{}", user_id.to_string()),
+        &params,
+    )
+    .unwrap()
 }
