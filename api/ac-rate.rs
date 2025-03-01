@@ -1,6 +1,5 @@
 use lib::{get_ac_rate, ContestType, ShieldsResponseBody, UserId};
 use once_cell::sync::Lazy;
-use serde_json;
 use std::collections::{HashMap, VecDeque};
 use std::convert::TryFrom;
 use std::sync::Mutex;
@@ -60,18 +59,7 @@ fn check_atcoder_rate_limit() -> bool {
     let duration = Duration::from_secs(60);
     // 1分以内の履歴のみ残す
     let mut history = ATCODER_REQUEST_TIME_HISTORY.lock().unwrap();
-    loop {
-        match history.pop_front() {
-            Some(t) => {
-                if t >= now - duration {
-                    // restore
-                    history.push_front(t);
-                    break;
-                }
-            }
-            _ => break,
-        }
-    }
+    history.retain(|t| *t >= now - duration);
     // 1分間に10回までのリクエストを許可する
     let ok = history.len() < 10;
     if ok {
