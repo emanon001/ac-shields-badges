@@ -42,12 +42,13 @@ pub fn get_ac_rate(
 fn user_profile_url(user_id: &UserId, contest_type: ContestType) -> Url {
     let mut params: Vec<(&str, &str)> = Vec::new();
     params.push(("lang", "en"));
-    match contest_type {
-        ContestType::Heuristic => {
-            params.push(("contestType", "heuristic"));
-        }
-        _ => {}
-    };
+    params.push((
+        "contestType",
+        match contest_type {
+            ContestType::Heuristic => "heuristic",
+            ContestType::Algorithm => "algo", // "algorithm" ではなく "algo" を指定する必要がある
+        },
+    ));
     Url::parse_with_params(
         &format!("https://atcoder.jp/users/{}", user_id.to_string()),
         &params,
