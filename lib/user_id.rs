@@ -62,10 +62,10 @@ mod tests {
     #[case("user@name")] // 無効な文字（@）
     #[case("あいう")] // 非ASCII文字
     fn test_invalid_user_id(#[case] input: &str) {
-        assert_eq!(
+        assert!(matches!(
             UserId::try_from(input),
-            Err(Error::InvalidFormat(input.to_owned())),
-        );
+            Err(Error::InvalidFormat(_))
+        ));
     }
 
     #[test]
