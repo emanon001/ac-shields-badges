@@ -1,3 +1,4 @@
+use lib::{get_ac_rate, ContestType, ShieldsResponseBody, UserId};
 use once_cell::sync::Lazy;
 use serde_json;
 use std::collections::{HashMap, VecDeque};
@@ -5,7 +6,6 @@ use std::convert::TryFrom;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 use url::Url;
-use util::{get_ac_rate, ContestType, ShieldsResponseBody, UserId};
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
 
 static ATCODER_REQUEST_TIME_HISTORY: Lazy<Mutex<VecDeque<Instant>>> = Lazy::new(|| {
