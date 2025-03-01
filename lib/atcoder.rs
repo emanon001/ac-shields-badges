@@ -49,9 +49,5 @@ fn user_profile_url(user_id: &UserId, contest_type: ContestType) -> Url {
             ContestType::Algorithm => "algo", // "algorithm" ではなく "algo" を指定する必要がある
         },
     ));
-    Url::parse_with_params(
-        &format!("https://atcoder.jp/users/{}", user_id.to_string()),
-        &params,
-    )
-    .unwrap()
+    Url::parse_with_params(&format!("https://atcoder.jp/users/{}", user_id), &params).unwrap()
 }
