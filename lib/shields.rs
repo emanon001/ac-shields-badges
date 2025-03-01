@@ -13,7 +13,7 @@ pub struct ShieldsResponseBody {
 }
 
 impl ShieldsResponseBody {
-    pub fn new_ac_rate_response(contest_type: ContestType, rate: Option<Rate>) -> Self {
+    pub fn new(contest_type: ContestType, rate: Option<Rate>) -> Self {
         let label = format!(
             "AtCoder{}",
             match contest_type {
@@ -71,9 +71,9 @@ mod tests {
     #[case(2799, "FF8000")]
     #[case(2800, "FF0000")]
     #[case(4200, "FF0000")]
-    fn test_new_ac_rate_response_algorithm(#[case] rate: u32, #[case] color: &str) {
+    fn test_new_algorithm(#[case] rate: u32, #[case] color: &str) {
         assert_eq!(
-            ShieldsResponseBody::new_ac_rate_response(ContestType::Algorithm, Some(Rate(rate))),
+            ShieldsResponseBody::new(ContestType::Algorithm, Some(Rate(rate))),
             ShieldsResponseBody {
                 schema_version: 1,
                 label: "AtCoderⒶ".to_string(),
@@ -84,9 +84,9 @@ mod tests {
     }
 
     #[test]
-    fn test_new_ac_rate_response_algorithm_user_has_not_competed_in_a_rated_yet() {
+    fn test_new_algorithm_user_has_not_competed_in_a_rated_yet() {
         assert_eq!(
-            ShieldsResponseBody::new_ac_rate_response(ContestType::Algorithm, None),
+            ShieldsResponseBody::new(ContestType::Algorithm, None),
             ShieldsResponseBody {
                 schema_version: 1,
                 label: "AtCoderⒶ".to_string(),
@@ -113,9 +113,9 @@ mod tests {
     #[case(2799, "FF8000")]
     #[case(2800, "FF0000")]
     #[case(4200, "FF0000")]
-    fn test_new_ac_rate_response_heuristic(#[case] rate: u32, #[case] color: &str) {
+    fn test_new_heuristic(#[case] rate: u32, #[case] color: &str) {
         assert_eq!(
-            ShieldsResponseBody::new_ac_rate_response(ContestType::Heuristic, Some(Rate(rate))),
+            ShieldsResponseBody::new(ContestType::Heuristic, Some(Rate(rate))),
             ShieldsResponseBody {
                 schema_version: 1,
                 label: "AtCoderⒽ".to_string(),
@@ -126,9 +126,9 @@ mod tests {
     }
 
     #[test]
-    fn test_new_ac_rate_response_heuristic_user_has_not_competed_in_a_rated_yet() {
+    fn test_new_heuristic_user_has_not_competed_in_a_rated_yet() {
         assert_eq!(
-            ShieldsResponseBody::new_ac_rate_response(ContestType::Heuristic, None),
+            ShieldsResponseBody::new(ContestType::Heuristic, None),
             ShieldsResponseBody {
                 schema_version: 1,
                 label: "AtCoderⒽ".to_string(),

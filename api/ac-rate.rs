@@ -43,7 +43,7 @@ pub async fn handler(request: Request) -> Result<Response<Body>, Error> {
     }
 
     let rate = get_ac_rate(&user_id, contest_type).map_err(|_| "failed get AtCoder rate")?;
-    let body = ShieldsResponseBody::new_ac_rate_response(contest_type, rate);
+    let body = ShieldsResponseBody::new(contest_type, rate);
     Ok(Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", "application/json; charset=utf-8")
