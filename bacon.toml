@@ -1,0 +1,41 @@
+# This is a configuration file for the bacon tool
+#
+# Complete help on configuration: https://dystroy.org/bacon/config/
+# 
+# You may check the current default at
+#   https://github.com/Canop/bacon/blob/main/defaults/default-bacon.toml
+
+default_job = "test"
+env.CARGO_TERM_COLOR = "always"
+
+[jobs.build]
+command = ["cargo", "build", "--release"]
+need_stdout = false
+watch = ["api", "lib"]
+
+[jobs.clippy]
+command = ["cargo", "clippy"]
+need_stdout = false
+watch = ["api", "lib"]
+
+# This job lets you run
+# - all tests: bacon test
+# - a specific test: bacon test -- config::test_default_files
+# - the tests of a package: bacon test -- -- -p config
+[jobs.test]
+command = ["cargo", "test"]
+need_stdout = true
+watch = ["api", "lib"]
+
+# You may define here keybindings that would be specific to
+# a project, for example a shortcut to launch a specific job.
+# Shortcuts to internal functions (scrolling, toggling, etc.)
+# should go in your personal global prefs.toml file instead.
+[keybindings]
+esc = "back"
+g = "scroll-to-top"
+shift-g = "scroll-to-bottom"
+k = "scroll-lines(-1)"
+j = "scroll-lines(1)"
+ctrl-u = "scroll-page(-1)"
+ctrl-d = "scroll-page(1)"
