@@ -37,7 +37,7 @@ pub async fn handler(request: Request) -> Result<Response<Body>, Error> {
     };
 
     // check rate-limit
-    if !check_atcoder_rate_limit().await {
+    if !check_and_record_atcoder_rate_limit().await {
         return too_many_requests_response("rate limit has been reached".into());
     }
 
@@ -56,7 +56,7 @@ pub async fn handler(request: Request) -> Result<Response<Body>, Error> {
         )?)
 }
 
-async fn check_atcoder_rate_limit() -> bool {
+async fn check_and_record_atcoder_rate_limit() -> bool {
     let now = Instant::now();
     let duration = Duration::from_secs(60);
     // 1分以内の履歴のみ残す
