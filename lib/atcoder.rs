@@ -6,11 +6,31 @@ use crate::contest_type::ContestType;
 use crate::rate::Rate;
 use crate::user_id::UserId;
 
-pub fn get_ac_rate(
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("HTTP request failed: {0}")]
+    RequestError(#[source] reqwest::Error),
+    #[error("Failed to parse rate: {0}")]
+    ParseError(#[source] std::num::ParseIntError),
+    #[error("Rate not found in the response")]
+    RateNotFound,
+    #[error("Pattern matching failed")]
+    PatternError,
+}
+
+pub async fn get_ac_rate(
     user_id: &UserId,
     contest_type: ContestType,
-) -> Result<Option<Rate>, Box<dyn std::error::Error>> {
-    let doc = reqwest::blocking::get(user_profile_url(user_id, contest_type))?.text()?;
+) -> Result<Option<Rate>, Error> {
+    let client = reqwest::Client::new();
+    let doc = client
+        .get(user_profile_url(user_id, contest_type))
+        .send()
+        .await
+        .map_err(Error::RequestError)?
+        .text()
+        .await
+        .map_err(Error::RequestError)?;
     if doc.contains("This user has not competed in a rated contest yet.") {
         return Ok(None);
     }
@@ -28,14 +48,15 @@ pub fn get_ac_rate(
                 </tr>
             </tbody>
         </table>"#,
-    )?;
+    )
+    .expect("Pattern should be valid");
     let ms = pat.matches(&doc);
     match ms.first() {
         Some(m) => {
-            let rate: u32 = m["rate"].parse()?;
+            let rate: u32 = m["rate"].parse().map_err(Error::ParseError)?;
             Ok(Some(Rate::new(rate)))
         }
-        None => Err("rate not found".into()),
+        None => Err(Error::RateNotFound),
     }
 }
 
