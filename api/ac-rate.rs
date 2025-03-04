@@ -41,7 +41,9 @@ pub async fn handler(request: Request) -> Result<Response<Body>, Error> {
         return too_many_requests_response("rate limit has been reached".into());
     }
 
-    let rate = get_ac_rate(&user_id, contest_type).map_err(|_| "failed get AtCoder rate")?;
+    let rate = get_ac_rate(&user_id, contest_type)
+        .await
+        .map_err(|_| "failed get AtCoder rate")?;
     let body = ShieldsResponseBody::new(contest_type, rate);
     Ok(Response::builder()
         .status(StatusCode::OK)
