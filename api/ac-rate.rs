@@ -36,7 +36,6 @@ pub async fn handler(request: Request) -> Result<Response<Body>, Error> {
         None => ContestType::Algorithm,
     };
 
-    // check rate-limit
     if !check_and_record_atcoder_rate_limit().await {
         return too_many_requests_response("rate limit has been reached".into());
     }
