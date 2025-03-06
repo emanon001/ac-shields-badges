@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ac-shields-badges</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    .badge-generator {
+      margin: 20px 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+      border-radius: 5px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .form-group input,
+    .form-group select {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: 200px;
+    }
+
+    .preview {
+      margin: 20px 0;
+      display: none;
+      /* 初期状態では非表示 */
+    }
+
+    .url-display {
+      background-color: #fff;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin: 10px 0;
+      word-break: break-all;
+    }
+
+    .button {
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: none;
+      margin-right: 10px;
+    }
+
+    .generate-button {
+      background-color: #00a550;
+      color: white;
+    }
+
+    .generate-button:hover {
+      background-color: #008040;
+    }
+
+    .copy-button {
+      background-color: #0070f3;
+      color: white;
+    }
+
+    .copy-button:hover {
+      background-color: #0051cc;
+    }
+
+    .success-message {
+      color: #00a550;
+      display: none;
+      margin-left: 10px;
+    }
+
+    .result-section {
+      display: none;
+      /* 初期状態では非表示 */
+    }
+  </style>
+</head>
+
+<body>
+  <h1>ac-shields-badges</h1>
+
+  <p>AtCoderのレーティングをShields.ioのバッジで表示します。</p>
+
+  <div class="badge-generator">
+    <h2>バッジ生成</h2>
+    <div class="form-group">
+      <label for="user-id">AtCoder ユーザーID:</label>
+      <input type="text" id="user-id" placeholder="AtCoderのユーザーIDを入力">
+    </div>
+    <div class="form-group">
+      <label for="contest-type">コンテストタイプ:</label>
+      <select id="contest-type">
+        <option value="algorithm">アルゴリズム</option>
+        <option value="heuristic">ヒューリスティック</option>
+      </select>
+    </div>
+    <button onclick="generateBadge()" class="button generate-button">バッジ生成</button>
+
+    <div id="result" class="result-section">
+      <div class="preview">
+        <h3>プレビュー</h3>
+        <div id="badge-preview"></div>
+      </div>
+      <div>
+        <h3>バッジURL</h3>
+        <div id="badge-url" class="url-display"></div>
+        <button onclick="copyBadgeUrl()" class="button copy-button">URLをコピー</button>
+        <span id="copy-success" class="success-message">コピーしました！</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function getBadgeUrl(userId, contestType) {
+      const baseUrl = window.location.origin;
+      const endpoint = encodeURIComponent(
+        `${baseUrl}/api/ac-rate?user_id=${encodeURIComponent(userId)}&contest_type=${encodeURIComponent(contestType)}`
+      );
+      return `https://img.shields.io/endpoint?url=${endpoint}`;
+    }
+
+    function generateBadge() {
+      const userId = document.getElementById('user-id').value;
+      const contestType = document.getElementById('contest-type').value;
+
+      if (typeof userId !== 'string') throw new Error('assert(userId is string)');
+      if (userId.trim() === '') {
+        alert('ユーザーIDを入力してください');
+        return;
+      }
+      if (typeof contestType !== 'string') throw new Error('assert(contestType is string)');
+
+      const badgeUrl = getBadgeUrl(userId, contestType);
+
+      // プレビューを更新
+      document.getElementById('badge-preview').innerHTML =
+        `<img src="${badgeUrl}" alt="${userId}'s ${contestType} rating">`;
+
+      // URLを表示
+      document.getElementById('badge-url').textContent = badgeUrl;
+
+      // 結果セクションを表示
+      document.querySelector('.preview').style.display = 'block';
+      document.querySelector('.result-section').style.display = 'block';
+    }
+
+    function copyBadgeUrl() {
+      const badgeUrl = document.getElementById('badge-url').textContent;
+      if (badgeUrl === '' || badgeUrl === null) return;
+
+      navigator.clipboard.writeText(badgeUrl).then(() => {
+        const successMessage = document.getElementById('copy-success');
+        successMessage.style.display = 'inline';
+        setTimeout(() => {
+          successMessage.style.display = 'none';
+        }, 2000);
+      });
+    }
+  </script>
+
+  <h2>GitHub</h2>
+  <p>ソースコードは<a href="https://github.com/emanon001/ac-shields-badges">GitHub</a>で公開しています。</p>
+</body>
+
+</html>
