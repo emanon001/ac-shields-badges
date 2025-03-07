@@ -103,25 +103,22 @@
       <label for="user-id">AtCoder ユーザーID:</label>
       <input type="text" id="user-id" placeholder="AtCoderのユーザーIDを入力">
     </div>
-    <div class="form-group">
-      <label for="contest-type">コンテストタイプ:</label>
-      <select id="contest-type">
-        <option value="algorithm">アルゴリズム</option>
-        <option value="heuristic">ヒューリスティック</option>
-      </select>
-    </div>
     <button onclick="generateBadge()" class="button generate-button">バッジ生成</button>
 
     <div id="result" class="result-section">
-      <div class="preview">
-        <h3>プレビュー</h3>
-        <div id="badge-preview"></div>
-      </div>
       <div>
-        <h3>バッジURL</h3>
-        <div id="badge-url" class="url-display"></div>
-        <button onclick="copyBadgeUrl()" class="button copy-button">URLをコピー</button>
-        <span id="copy-success" class="success-message">コピーしました！</span>
+        <h3>アルゴリズム</h3>
+        <div id="algorithm-badge-preview"></div>
+        <div id="algorithm-badge-url" class="url-display"></div>
+        <button onclick="copyBadgeUrl('algorithm')" class="button copy-button">URLをコピー</button>
+        <span id="algorithm-copy-success" class="success-message">コピーしました！</span>
+      </div>
+      <div style="margin-top: 30px;">
+        <h3>ヒューリスティック</h3>
+        <div id="heuristic-badge-preview"></div>
+        <div id="heuristic-badge-url" class="url-display"></div>
+        <button onclick="copyBadgeUrl('heuristic')" class="button copy-button">URLをコピー</button>
+        <span id="heuristic-copy-success" class="success-message">コピーしました！</span>
       </div>
     </div>
   </div>
@@ -137,35 +134,37 @@
 
     function generateBadge() {
       const userId = document.getElementById('user-id').value;
-      const contestType = document.getElementById('contest-type').value;
 
       if (typeof userId !== 'string') throw new Error('assert(userId is string)');
       if (userId.trim() === '') {
         alert('ユーザーIDを入力してください');
         return;
       }
-      if (typeof contestType !== 'string') throw new Error('assert(contestType is string)');
 
-      const badgeUrl = getBadgeUrl(userId, contestType);
+      // アルゴリズムとヒューリスティック両方のバッジを生成
+      const algorithmBadgeUrl = getBadgeUrl(userId, 'algorithm');
+      const heuristicBadgeUrl = getBadgeUrl(userId, 'heuristic');
 
       // プレビューを更新
-      document.getElementById('badge-preview').innerHTML =
-        `<img src="${badgeUrl}" alt="${userId}'s ${contestType} rating">`;
+      document.getElementById('algorithm-badge-preview').innerHTML =
+        `<img src="${algorithmBadgeUrl}" alt="${userId}'s algorithm rating">`;
+      document.getElementById('heuristic-badge-preview').innerHTML =
+        `<img src="${heuristicBadgeUrl}" alt="${userId}'s heuristic rating">`;
 
       // URLを表示
-      document.getElementById('badge-url').textContent = badgeUrl;
+      document.getElementById('algorithm-badge-url').textContent = algorithmBadgeUrl;
+      document.getElementById('heuristic-badge-url').textContent = heuristicBadgeUrl;
 
       // 結果セクションを表示
-      document.querySelector('.preview').style.display = 'block';
       document.querySelector('.result-section').style.display = 'block';
     }
 
-    function copyBadgeUrl() {
-      const badgeUrl = document.getElementById('badge-url').textContent;
+    function copyBadgeUrl(type) {
+      const badgeUrl = document.getElementById(`${type}-badge-url`).textContent;
       if (badgeUrl === '' || badgeUrl === null) return;
 
       navigator.clipboard.writeText(badgeUrl).then(() => {
-        const successMessage = document.getElementById('copy-success');
+        const successMessage = document.getElementById(`${type}-copy-success`);
         successMessage.style.display = 'inline';
         setTimeout(() => {
           successMessage.style.display = 'none';
