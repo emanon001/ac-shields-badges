@@ -12,7 +12,7 @@ regex = "1.11"
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value"] }
-thiserror = "2.0.16"
+thiserror = "2.0.17"
 tokio = { version = "1", features = ["macros"] }
 url = "2.5.7"
 vercel_runtime = { version = "1" }
