@@ -15,7 +15,7 @@ serde_json = { version = "1", features = ["raw_value"] }
 thiserror = "2.0.17"
 tokio = { version = "1", features = ["macros"] }
 url = "2.5.7"
-vercel_runtime = { version = "1" }
+vercel_runtime = { version = "2" }
 
 [dev-dependencies]
 rstest = "0.26.1"
