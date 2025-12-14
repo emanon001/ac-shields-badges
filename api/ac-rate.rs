@@ -1,11 +1,11 @@
-use lib::{get_ac_rate, ContestType, ShieldsResponseBody, UserId};
+use lib::{ContestType, ShieldsResponseBody, UserId, get_ac_rate};
 use once_cell::sync::Lazy;
 use std::collections::{HashMap, VecDeque};
 use std::convert::TryFrom;
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 use url::Url;
-use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
+use vercel_runtime::{Error, Request, Response, ResponseBody, run, service_fn};
 
 static ATCODER_REQUEST_TIME_HISTORY: Lazy<Mutex<VecDeque<Instant>>> = Lazy::new(|| {
     let m = VecDeque::new();
@@ -14,10 +14,11 @@ static ATCODER_REQUEST_TIME_HISTORY: Lazy<Mutex<VecDeque<Instant>>> = Lazy::new(
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    run(handler).await
+    let service = service_fn(handler);
+    run(service).await
 }
 
-pub async fn handler(request: Request) -> Result<Response<Body>, Error> {
+async fn handler(request: Request) -> Result<Response<ResponseBody>, Error> {
     // get user_id & contest_type from query-string
     let url = Url::parse(&request.uri().to_string()).map_err(|_| "failed parse uri")?;
     let query_map = url.query_pairs().into_owned().collect::<HashMap<_, _>>();
@@ -45,7 +46,7 @@ pub async fn handler(request: Request) -> Result<Response<Body>, Error> {
         .map_err(|_| "failed get AtCoder rate")?;
     let body = ShieldsResponseBody::new(contest_type, rate);
     Ok(Response::builder()
-        .status(StatusCode::OK)
+        .status(200)
         .header("Content-Type", "application/json; charset=utf-8")
         .header("Cache-Control", "max-age=0, s-maxage=86400")
         .body(
@@ -69,16 +70,16 @@ async fn check_and_record_atcoder_rate_limit() -> bool {
     ok
 }
 
-fn not_found_response(mes: String) -> Result<Response<Body>, Error> {
+fn not_found_response(mes: String) -> Result<Response<ResponseBody>, Error> {
     Ok(Response::builder()
-        .status(StatusCode::NOT_FOUND)
+        .status(404)
         .header("Content-Type", "text/plain")
         .body(mes.into())?)
 }
 
-fn too_many_requests_response(mes: String) -> Result<Response<Body>, Error> {
+fn too_many_requests_response(mes: String) -> Result<Response<ResponseBody>, Error> {
     Ok(Response::builder()
-        .status(StatusCode::TOO_MANY_REQUESTS)
+        .status(429)
         .header("Content-Type", "text/plain")
         .body(mes.into())?)
 }
