@@ -1,15 +1,10 @@
-use lib::{ContestType, ShieldsResponseBody, UserId, get_ac_rate};
-use once_cell::sync::Lazy;
-use std::collections::{HashMap, VecDeque};
+use lib::{ContestType, ShieldsResponseBody, UptrashRateLimiter, UserId, get_ac_rate};
+use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::time::{Duration, Instant};
-use tokio::sync::Mutex;
+use std::time::Duration;
 use vercel_runtime::{Error, Request, Response, ResponseBody, run, service_fn};
 
-static ATCODER_REQUEST_TIME_HISTORY: Lazy<Mutex<VecDeque<Instant>>> = Lazy::new(|| {
-    let m = VecDeque::new();
-    Mutex::new(m)
-});
+const GLOBAL_RATE_LIMIT_KEY: &str = "ac-rate:global";
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -18,6 +13,14 @@ async fn main() -> Result<(), Error> {
 }
 
 async fn handler(request: Request) -> Result<Response<ResponseBody>, Error> {
+    let rate_limiter = match UptrashRateLimiter::from_env(Duration::from_secs(60), 10) {
+        Ok(limiter) => limiter,
+        Err(err) => {
+            eprintln!("failed to construct Uptrash rate limiter: {err}");
+            return internal_server_error_response("rate limiter is not configured".into());
+        }
+    };
+
     // get user_id & contest_type from query-string
     let query_map = request
         .uri()
@@ -40,8 +43,13 @@ async fn handler(request: Request) -> Result<Response<ResponseBody>, Error> {
         None => ContestType::Algorithm,
     };
 
-    if !check_and_record_atcoder_rate_limit().await {
-        return too_many_requests_response("rate limit has been reached".into());
+    match rate_limiter.check_and_record(GLOBAL_RATE_LIMIT_KEY).await {
+        Ok(true) => {}
+        Ok(false) => return too_many_requests_response("rate limit has been reached".into()),
+        Err(err) => {
+            eprintln!("failed to verify Uptrash rate limit: {err}");
+            return internal_server_error_response("failed to check rate limit".into());
+        }
     }
 
     let rate = get_ac_rate(&user_id, contest_type)
@@ -59,20 +67,6 @@ async fn handler(request: Request) -> Result<Response<ResponseBody>, Error> {
         )?)
 }
 
-async fn check_and_record_atcoder_rate_limit() -> bool {
-    let now = Instant::now();
-    let duration = Duration::from_secs(60);
-    // 1分以内の履歴のみ残す
-    let mut history = ATCODER_REQUEST_TIME_HISTORY.lock().await;
-    history.retain(|t| *t >= now - duration);
-    // 1分間に10回までのリクエストを許可する
-    let ok = history.len() < 10;
-    if ok {
-        history.push_back(now);
-    }
-    ok
-}
-
 fn not_found_response(mes: String) -> Result<Response<ResponseBody>, Error> {
     Ok(Response::builder()
         .status(404)
@@ -83,6 +77,13 @@ fn not_found_response(mes: String) -> Result<Response<ResponseBody>, Error> {
 fn too_many_requests_response(mes: String) -> Result<Response<ResponseBody>, Error> {
     Ok(Response::builder()
         .status(429)
+        .header("Content-Type", "text/plain")
+        .body(mes.into())?)
+}
+
+fn internal_server_error_response(mes: String) -> Result<Response<ResponseBody>, Error> {
+    Ok(Response::builder()
+        .status(500)
         .header("Content-Type", "text/plain")
         .body(mes.into())?)
 }
