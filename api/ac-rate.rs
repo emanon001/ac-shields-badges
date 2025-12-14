@@ -4,7 +4,6 @@ use std::collections::{HashMap, VecDeque};
 use std::convert::TryFrom;
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
-use url::Url;
 use vercel_runtime::{Error, Request, Response, ResponseBody, run, service_fn};
 
 static ATCODER_REQUEST_TIME_HISTORY: Lazy<Mutex<VecDeque<Instant>>> = Lazy::new(|| {
@@ -20,8 +19,12 @@ async fn main() -> Result<(), Error> {
 
 async fn handler(request: Request) -> Result<Response<ResponseBody>, Error> {
     // get user_id & contest_type from query-string
-    let url = Url::parse(&request.uri().to_string()).map_err(|_| "failed parse uri")?;
-    let query_map = url.query_pairs().into_owned().collect::<HashMap<_, _>>();
+    let query_map = request
+        .uri()
+        .query()
+        .map(|q| url::form_urlencoded::parse(q.as_bytes()))
+        .map(|parsed| parsed.into_owned().collect::<HashMap<_, _>>())
+        .unwrap_or_default();
     let user_id = match query_map
         .get("user_id")
         .and_then(|u| UserId::try_from(u.as_ref()).ok())
