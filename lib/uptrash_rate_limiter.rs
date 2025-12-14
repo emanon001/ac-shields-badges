@@ -32,6 +32,8 @@ pub enum Error {
     Deserialize(#[source] serde_json::Error),
     #[error("error response from Uptrash: {0}, {1}")]
     ErrorResponse(reqwest::StatusCode, String),
+    #[error("error pipeline API response: {0}")]
+    ErrorPipelineApiResponse(String),
     #[error("invalid Uptrash response format")]
     InvalidResponseFormat,
     #[error("window duration must be greater than 0 seconds")]
@@ -77,20 +79,19 @@ impl UptrashRateLimiter {
             .send()
             .await
             .map_err(Error::Request)?;
+
         let status = resp.status();
         let text = resp.text().await.map_err(Error::Request)?;
         if !status.is_success() {
             return Err(Error::ErrorResponse(status, text));
         }
+
         let body: Vec<PipelineItemResponse<u64>> =
             serde_json::from_str(&text).map_err(Error::Deserialize)?;
         let parsed = body.first().ok_or(Error::InvalidResponseFormat)?;
         match (parsed.result, &parsed.error) {
             (Some(count), None) => Ok(count <= self.request_limit_per_window),
-            (_, Some(err_msg)) => Err(Error::ErrorResponse(
-                reqwest::StatusCode::INTERNAL_SERVER_ERROR,
-                err_msg.to_owned(),
-            )),
+            (_, Some(err_msg)) => Err(Error::ErrorPipelineApiResponse(err_msg.to_owned())),
             _ => Err(Error::InvalidResponseFormat),
         }
     }
