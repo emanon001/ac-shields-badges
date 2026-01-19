@@ -10,7 +10,7 @@ regex = "1.12"
 reqwest = { version = "0.13", features = ["blocking", "json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-thiserror = "2.0.17"
+thiserror = "2.0.18"
 tokio = { version = "1", features = ["full"] } # async runtime
 url = "2.5.8"
 vercel_runtime = { version = "2" } # handles communicating with Vercel's function bridge
